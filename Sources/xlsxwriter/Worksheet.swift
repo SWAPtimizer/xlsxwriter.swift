@@ -112,6 +112,101 @@ public struct Worksheet {
 
     return self
   }
+    
+    // Added, RJ 2026-09-12: ----v    1️⃣
+    
+    /// Freeze panes for scrolling; pass in the first does-scroll cell, so frozen is all to the left of, and all above, this cell
+    @discardableResult public func freeze(_ cell: Cell) -> Worksheet {
+        worksheet_freeze_panes(lxw_worksheet, cell.row, cell.col)
+        return self
+    }
+    
+    /// Selects the given cell. Use case: when user opens the workbook, this cell in this worksheet is where the cursor is visible
+    @discardableResult public func selection(_ cell: Cell) -> Worksheet {
+        worksheet_set_selection(lxw_worksheet, cell.row, cell.col, cell.row, cell.col)
+        return self
+    }
+    
+    /// Selects the given range. Use case: when user opens the workbook, this range in this worksheet is highlighted/visible as selected
+    @discardableResult public func selection(_ range: Range) -> Worksheet {
+        worksheet_set_selection(lxw_worksheet, range.row, range.col, range.row2, range.col2)
+        return self
+    }
+        
+    /// Populates both the formula and the initial (displayed before recalculation) value. Causes a fatalError immediately if the WRITE itself fails (e.g. invalid cell reference) — not checking the formula result.
+    @discardableResult public func write(formula: String, result: Double, _ cell: Cell, format: Format? = nil) -> Worksheet {
+        let error = formula.withCString { s in
+            worksheet_write_formula_num(lxw_worksheet, cell.row, cell.col, s, format?.lxw_format, result)
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
+    
+    public struct CommentOptions {
+        public var visible: UInt8
+        public var author: String?
+        public var width: UInt16
+        public var height: UInt16
+        public var xScale: Double
+        public var yScale: Double
+        public var color: Color?
+        public var fontName: String?
+        public var fontSize: Double
+        public var fontFamily: UInt8
+        public var start: Cell?
+        public var xOffset: Int32
+        public var yOffset: Int32
+        
+        public init(visible: UInt8 = 0, author: String? = nil, width: UInt16 = 128, height: UInt16 = 74,
+                    xScale: Double = 1.0, yScale: Double = 1.0, color: Color? = nil,
+                    fontName: String? = nil, fontSize: Double = 8, fontFamily: UInt8 = 0,
+                    start: Cell? = nil, xOffset: Int32 = 0, yOffset: Int32 = 0) {
+            self.visible = visible; self.author = author; self.width = width; self.height = height
+            self.xScale = xScale; self.yScale = yScale; self.color = color
+            self.fontName = fontName; self.fontSize = fontSize; self.fontFamily = fontFamily
+            self.start = start; self.xOffset = xOffset; self.yOffset = yOffset
+        }
+    }
+    
+    private func withOptionalCString<R>(_ string: String?, _ body: (UnsafePointer<CChar>?) -> R) -> R {
+        if let string = string { return string.withCString { body($0) } }
+        return body(nil)
+    }
+    
+    @discardableResult public func write(comment: String, _ cell: Cell, options: CommentOptions, format: Format? = nil) -> Worksheet {
+        var error: lxw_error = LXW_NO_ERROR
+        withOptionalCString(options.author) { authorPtr in
+            withOptionalCString(options.fontName) { fontNamePtr in
+                var cOptions = lxw_comment_options(
+                    visible: options.visible,
+                    author: authorPtr,
+                    width: options.width,
+                    height: options.height,
+                    x_scale: options.xScale,
+                    y_scale: options.yScale,
+                    color: options.color?.hex ?? 0,
+                    font_name: fontNamePtr,
+                    font_size: options.fontSize,
+                    font_family: options.fontFamily,
+                    start_row: options.start?.row ?? 0,
+                    start_col: options.start?.col ?? 0,
+                    x_offset: options.xOffset,
+                    y_offset: options.yOffset
+                )
+                error = comment.withCString { s in
+                    worksheet_write_comment_opt(lxw_worksheet, cell.row, cell.col, s, &cOptions)
+                }
+            }
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
+    
+    // Added, RJ 2026-09-12 -----^    1️⃣
+    
+    
+    
+    
   /// Set a worksheet tab as selected.
   @discardableResult public func select() -> Worksheet {
     worksheet_select(lxw_worksheet)
@@ -247,6 +342,13 @@ public struct Worksheet {
     table_columns.forEach { $0.header.deallocate() }
     return self
   }
+    
+    
+    
+    
+    
+    
+    
 }
 
 private func makeCString(from str: String) -> UnsafePointer<CChar> {
