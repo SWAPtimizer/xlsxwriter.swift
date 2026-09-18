@@ -113,7 +113,7 @@ public struct Worksheet {
     return self
   }
     
-    // Added, RJ 2026-09-12: ----v    1️⃣
+    // Added, RJ 2026-09-12: ----v    1️⃣ 2️⃣
     
     /// Freeze panes for scrolling; pass in the first does-scroll cell, so frozen is all to the left of, and all above, this cell
     @discardableResult public func freeze(_ cell: Cell) -> Worksheet {
@@ -202,8 +202,25 @@ public struct Worksheet {
         return self
     }
     
-    // Added, RJ 2026-09-12 -----^    1️⃣
+    public enum IgnoredErrorType: UInt8 {
+        case numberStoredAsText = 1
+        case evalError = 2
+        case formulaDiffers = 3
+        case formulaRange = 4
+        case formulaUnlocked = 5
+    }
     
+    @discardableResult public func ignoreErrors(_ type: IgnoredErrorType, range: String) -> Worksheet {
+        let error = range.withCString { s in
+            worksheet_ignore_errors(lxw_worksheet, type.rawValue, s)
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
+
+    
+    // Added, RJ 2026-09-12 -----^    1️⃣ 2️⃣
+    // And, for the ignored errors things, 9-18-2026 also.
     
     
     
