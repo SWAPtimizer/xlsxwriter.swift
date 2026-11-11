@@ -218,10 +218,27 @@ public struct Worksheet {
         return self
     }
 
+      /// Restricts the cell to a dropdown of the given values; anything else is rejected (Stop alert). Added RJ 2026-11-11
+    @discardableResult public func validateList(_ values: [String], _ cell: Cell) -> Worksheet {
+        let cStrings = values.map { strdup($0) }
+        defer { cStrings.forEach { free($0) } }
+        var list: [UnsafePointer<CChar>?] = cStrings.map { UnsafePointer($0) } + [nil]   // nil-terminated
+
+        var dv = lxw_data_validation()
+        dv.validate   = UInt8(LXW_VALIDATION_TYPE_LIST.rawValue)
+        dv.error_type = UInt8(LXW_VALIDATION_ERROR_TYPE_STOP.rawValue)
+
+        let error = list.withUnsafeMutableBufferPointer { buf -> lxw_error in
+            dv.value_list = buf.baseAddress
+            return worksheet_data_validation_cell(lxw_worksheet, cell.row, cell.col, &dv)
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
     
-    // Added, RJ 2026-09-12 -----^    1️⃣ 2️⃣
+    // Added, RJ 2026-09-12  -----^    1️⃣ 2️⃣
     // And, for the ignored errors things, 9-18-2026 also.
-    
+    // And, for the validateList(), 2026-11-11 also.
     
     
   /// Set a worksheet tab as selected.
