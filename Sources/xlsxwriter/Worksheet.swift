@@ -235,10 +235,26 @@ public struct Worksheet {
         if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
         return self
     }
-    
-    // Added, RJ 2026-09-12  -----^    1️⃣ 2️⃣
+
+    /// Conditional format: when the cell's text equals `text`, apply `format` on top of its normal format. Added RJ 2026-11-12
+    @discardableResult public func conditionalEquals(_ text: String, _ cell: Cell, format: Format) -> Worksheet {
+        let error = "\"\(text)\"".withCString { s -> lxw_error in        // Excel wants the string quoted
+            var cf = lxw_conditional_format()
+            cf.type         = UInt8(LXW_CONDITIONAL_TYPE_CELL.rawValue)
+            cf.criteria     = UInt8(LXW_CONDITIONAL_CRITERIA_EQUAL_TO.rawValue)
+            cf.value_string = s
+            cf.format       = format.lxw_format
+            return worksheet_conditional_format_cell(lxw_worksheet, cell.row, cell.col, &cf)
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
+
+  
+    // Added, RJ 2026-09-12 and beyond  -----^    1️⃣ 2️⃣
     // And, for the ignored errors things, 9-18-2026 also.
     // And, for the validateList(), 2026-11-11 also.
+    // And, with conditionalEquals() 2026-11-12
     
     
   /// Set a worksheet tab as selected.
