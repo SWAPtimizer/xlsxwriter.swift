@@ -250,6 +250,31 @@ public struct Worksheet {
         return self
     }
 
+      /// Conditional format: when a cell in `range` equals `number` exactly, apply `format`. Added RJ 2026-11-14
+    @discardableResult public func conditionalEquals(number: Double, _ range: Range, format: Format) -> Worksheet {
+        var cf = lxw_conditional_format()
+        cf.type     = UInt8(LXW_CONDITIONAL_TYPE_CELL.rawValue)
+        cf.criteria = UInt8(LXW_CONDITIONAL_CRITERIA_EQUAL_TO.rawValue)
+        cf.value    = number
+        cf.format   = format.lxw_format
+        let error = worksheet_conditional_format_range(lxw_worksheet, range.row, range.col, range.row2, range.col2, &cf)
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
+
+    /// Conditional format driven by a formula, applied across `range`. Write the formula as it reads for the
+    /// TOP-LEFT cell of the range; Excel shifts its relative references for every other cell. Added RJ 2026-11-14
+    @discardableResult public func conditionalFormula(_ formula: String, _ range: Range, format: Format) -> Worksheet {
+        let error = formula.withCString { s -> lxw_error in
+            var cf = lxw_conditional_format()
+            cf.type         = UInt8(LXW_CONDITIONAL_TYPE_FORMULA.rawValue)
+            cf.value_string = s
+            cf.format       = format.lxw_format
+            return worksheet_conditional_format_range(lxw_worksheet, range.row, range.col, range.row2, range.col2, &cf)
+        }
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
   
     // Added, RJ 2026-09-12 and beyond  -----^    1️⃣ 2️⃣
     // And, for the ignored errors things, 9-18-2026 also.
