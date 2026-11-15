@@ -275,6 +275,15 @@ public struct Worksheet {
         if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
         return self
     }
+
+    /// Hide a row (zero-based). This call sets the row's height and format too, replacing any earlier
+    /// `row(_:height:format:)` for the same row, so pass those here if the row needs them. Added RJ 2026-11-14
+    @discardableResult public func hideRow(_ row: Int, height: Double = 15.0, format: Format? = nil) -> Worksheet {
+        var o = lxw_row_col_options(hidden: 1, level: 0, collapsed: 0)
+        let error = worksheet_set_row_opt(lxw_worksheet, UInt32(row), height, format?.lxw_format, &o)
+        if error.rawValue != 0 { fatalError(String(cString: lxw_strerror(error))) }
+        return self
+    }
   
     // Added, RJ 2026-09-12 and beyond  -----^    1️⃣ 2️⃣
     // And, for the ignored errors things, 9-18-2026 also.
