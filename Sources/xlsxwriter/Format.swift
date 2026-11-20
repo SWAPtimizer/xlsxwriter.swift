@@ -85,6 +85,26 @@ public struct Format {
     format_set_border_color(lxw_format, color.hex)
     return self
   }
+  /// Set the color of the cell's top border.
+  @discardableResult public func top(color: Color) -> Format {
+    format_set_top_color(lxw_format, color.hex)
+    return self
+  }
+  /// Set the color of the cell's bottom border.
+  @discardableResult public func bottom(color: Color) -> Format {
+    format_set_bottom_color(lxw_format, color.hex)
+    return self
+  }
+  /// Set the color of the cell's left border.
+  @discardableResult public func left(color: Color) -> Format {
+    format_set_left_color(lxw_format, color.hex)
+    return self
+  }
+  /// Set the color of the cell's right border.
+  @discardableResult public func right(color: Color) -> Format {
+    format_set_right_color(lxw_format, color.hex)
+    return self
+  }  
   /// Set the color of the font used in the cell.
   @discardableResult public func font(color: Color) -> Format {
     format_set_font_color(lxw_format, color.hex)
